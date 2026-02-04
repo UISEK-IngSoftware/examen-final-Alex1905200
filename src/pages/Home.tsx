@@ -1,6 +1,7 @@
-import MessageListItem from '../components/MessageListItem';
-import { useState } from 'react';
-import { Message, getMessages } from '../data/messages';
+import PersonajeItem from "../components/PersonajeItem";
+import { useState } from "react";
+import { Item } from "../interfaces/Item";
+import axios from "axios";
 import {
   IonContent,
   IonHeader,
@@ -10,30 +11,47 @@ import {
   IonRefresherContent,
   IonTitle,
   IonToolbar,
-  useIonViewWillEnter
-} from '@ionic/react';
-import './Home.css';
+  IonSpinner,
+  IonText,
+  useIonViewWillEnter,
+} from "@ionic/react";
+import "./Home.css";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const Home: React.FC = () => {
+  const [personajes, setPersonajes] = useState<Item[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const fetchPersonajes = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await axios.get(API_URL);
+      setPersonajes(response.data.items);
+    } catch (error) {
+      console.error("Error al obtener personajes:", error);
+      setError("Error al cargar los personajes. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useIonViewWillEnter(() => {
-    const msgs = getMessages();
-    setMessages(msgs);
+    fetchPersonajes();
   });
 
-  const refresh = (e: CustomEvent) => {
-    setTimeout(() => {
-      e.detail.complete();
-    }, 3000);
+  const refresh = async (e: CustomEvent) => {
+    await fetchPersonajes();
+    e.detail.complete();
   };
 
   return (
     <IonPage id="home-page">
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Inbox</IonTitle>
+          <IonTitle>Personajes</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -43,15 +61,44 @@ const Home: React.FC = () => {
 
         <IonHeader collapse="condense">
           <IonToolbar>
-            <IonTitle size="large">
-              Inbox
-            </IonTitle>
+            <IonTitle size="large">Personajes</IonTitle>
           </IonToolbar>
         </IonHeader>
 
-        <IonList>
-          {messages.map(m => <MessageListItem key={m.id} message={m} />)}
-        </IonList>
+        {/* Estado de carga */}
+        {loading && (
+          <div className="ion-text-center ion-padding">
+            <IonSpinner name="crescent" />
+            <p>Cargando personajes...</p>
+          </div>
+        )}
+
+        {/* Estado de error */}
+        {error && !loading && (
+          <div className="ion-text-center ion-padding">
+            <IonText color="danger">
+              <p>{error}</p>
+            </IonText>
+          </div>
+        )}
+
+        {/* Estado vacío */}
+        {!loading && !error && personajes.length === 0 && (
+          <div className="ion-text-center ion-padding">
+            <IonText color="medium">
+              <p>No hay personajes disponibles.</p>
+            </IonText>
+          </div>
+        )}
+
+        {/* Lista de personajes */}
+        {!loading && !error && personajes.length > 0 && (
+          <IonList>
+            {personajes.map((p) => (
+              <PersonajeItem key={p.id} personaje={p} />
+            ))}
+          </IonList>
+        )}
       </IonContent>
     </IonPage>
   );

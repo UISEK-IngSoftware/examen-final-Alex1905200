@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Message, getMessage } from '../data/messages';
+import { useState } from "react";
+import { Item } from "../interfaces/Item";
+import axios from "axios";
 import {
   IonBackButton,
   IonButtons,
@@ -12,18 +13,27 @@ import {
   IonPage,
   IonToolbar,
   useIonViewWillEnter,
-} from '@ionic/react';
-import { personCircle } from 'ionicons/icons';
-import { useParams } from 'react-router';
-import './ViewMessage.css';
+} from "@ionic/react";
+import { personCircle } from "ionicons/icons";
+import { useParams } from "react-router";
+import "./ViewMessage.css";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 function ViewMessage() {
-  const [message, setMessage] = useState<Message>();
+  const [personaje, setPersonaje] = useState<Item>();
   const params = useParams<{ id: string }>();
 
   useIonViewWillEnter(() => {
-    const msg = getMessage(parseInt(params.id, 10));
-    setMessage(msg);
+    const fetchPersonaje = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/${params.id}`);
+        setPersonaje(response.data);
+      } catch (error) {
+        console.error("Error al obtener personaje:", error);
+      }
+    };
+    fetchPersonaje();
   });
 
   return (
@@ -31,44 +41,62 @@ function ViewMessage() {
       <IonHeader translucent>
         <IonToolbar>
           <IonButtons slot="start">
-            <IonBackButton text="Inbox" defaultHref="/home"></IonBackButton>
+            <IonBackButton
+              text="Personajes"
+              defaultHref="/home"
+            ></IonBackButton>
           </IonButtons>
         </IonToolbar>
       </IonHeader>
 
       <IonContent fullscreen>
-        {message ? (
+        {personaje ? (
           <>
             <IonItem>
-              <IonIcon aria-hidden="true" icon={personCircle} color="primary"></IonIcon>
+              <IonIcon
+                aria-hidden="true"
+                icon={personCircle}
+                color="primary"
+              ></IonIcon>
               <IonLabel className="ion-text-wrap">
                 <h2>
-                  {message.fromName}
+                  {personaje.name}
                   <span className="date">
-                    <IonNote>{message.date}</IonNote>
+                    <IonNote>{personaje.status}</IonNote>
                   </span>
                 </h2>
                 <h3>
-                  To: <IonNote>Me</IonNote>
+                  Especie: <IonNote>{personaje.species}</IonNote>
                 </h3>
               </IonLabel>
             </IonItem>
 
             <div className="ion-padding">
-              <h1>{message.subject}</h1>
+              <h1>{personaje.name}</h1>
+              {personaje.image && (
+                <img
+                  src={personaje.image}
+                  alt={personaje.name}
+                  style={{ width: "100%", borderRadius: "8px" }}
+                />
+              )}
               <p>
-                Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-                eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-                enim ad minim veniam, quis nostrud exercitation ullamco laboris
-                nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor
-                in reprehenderit in voluptate velit esse cillum dolore eu fugiat
-                nulla pariatur. Excepteur sint occaecat cupidatat non proident,
-                sunt in culpa qui officia deserunt mollit anim id est laborum.
+                <strong>Género:</strong> {personaje.gender}
+              </p>
+              <p>
+                <strong>Estado:</strong> {personaje.status}
+              </p>
+              <p>
+                <strong>Especie:</strong> {personaje.species}
+              </p>
+              <p>
+                <strong>Creado:</strong>{" "}
+                {new Date(personaje.createdAt).toLocaleDateString()}
               </p>
             </div>
           </>
         ) : (
-          <div>Message not found</div>
+          <div>Personaje no encontrado</div>
         )}
       </IonContent>
     </IonPage>
